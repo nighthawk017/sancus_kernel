@@ -35,12 +35,12 @@ static int SM_DATA(a) checked_b ;
 void SM_ENTRY(a) register_a(void) {
 	
 	sm_id  caller_id = sancus_get_self_id();
-	debug_puts("\n\n Registering...");
-	 debug_print_int("address id: %d\n",sancus_get_id(a.public_start));
-	debug_print_int("a.public_start: %d\n",a.public_start);
-	debug_print_int("a.public_end : %d\n",(a.public_end-1));
-	debug_print_int("a.secret_start : %d\n",a.secret_start);
-	debug_print_int("a.secret_end : %d\n\n",a.secret_end);
+	// debug_puts("\n\n Registering...");
+	// debug_print_int("address id: %d\n",sancus_get_id(a.public_start));
+	// debug_print_int("a.public_start: %d\n",a.public_start);
+	// debug_print_int("a.public_end : %d\n",(a.public_end-1));
+	// debug_print_int("a.secret_start : %d\n",a.secret_start);
+	// debug_print_int("a.secret_end : %d\n\n",a.secret_end);
 
 	register_sm(a.public_start, a.public_end-1, a.secret_start);//b.secret_start);
 	register_sm(a.secret_end,0,0);//b.secret_end);
@@ -65,8 +65,8 @@ void SM_ENTRY(a) a_sm(void) {
 
 void SM_ENTRY(b) register_b(void) {
 	sm_id  caller_id = sancus_get_self_id();
-	debug_puts("\n\n Registering...");
-	debug_print_int("### %d\n", sancus_get_id(b.public_start));
+	// debug_puts("\n\n Registering...");
+	// debug_print_int("### %d\n", sancus_get_id(b.public_start));
 	register_sm(b.public_start, b.public_end-1, b.secret_start); //SM_GET_SECRET_START(b));//
 	register_sm(b.secret_end,0,0);// //SM_GET_SECRET_END(b)
 	

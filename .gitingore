@@ -1,0 +1,6 @@
+
+# Compiled source #
+###################
+*.elf-no-macs
+*.o
+*.elf
