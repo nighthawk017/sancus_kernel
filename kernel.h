@@ -51,7 +51,7 @@ typedef struct {
  }registered_sm_data;
 
 
-int SM_ENTRY(kernel)  register_sm(const void *addr1, const void *addr2, const void *addr3);
+int SM_ENTRY(kernel)  register_sm( void *addr1,  void *addr2,  void *addr3);
 // method used for sending the has. It must be used hash_size/void_size times
 int SM_ENTRY(kernel)  send_hash(void *hash_part);
 // verify the integrity of an SM based on the id. send_hash should be used before calling this method to send the associated expected hash

@@ -127,7 +127,7 @@ void SM_FUNC(kernel) compute_hash(int index) {
 	// in the case of generateTestVectors, it will print 0s (there is another printer in generateTestVectors())
 	char* p ;
 	p = (char*)reg_SMs[index].pub_hash;
-	for(int i = 0; i < 16;i++)
+	for(int i = 0; i < 12;i++)
 		debug_print_int("%d ",(int)*(p+i));
 	debug_puts(" ");
 
@@ -136,6 +136,21 @@ void SM_FUNC(kernel) compute_hash(int index) {
 
 
 }
+
+//TODO replace the function with sancus_get_id
+sm_id SM_FUNC(kernel) get_addr_id(void * addr) {
+	sm_id ret;
+
+    asm("mov %1, r15\n\t"
+        ".word 0x1386\n\t"
+        "mov r15, %0"
+        : "=m"(ret)
+        : "m"(addr)
+        : "r15");
+
+    return ret;
+}
+
 
 
 /**************************************************************************************
@@ -149,21 +164,23 @@ void SM_FUNC(kernel) compute_hash(int index) {
 		4 if the SM doesn't have protection enabled
 		5 if another register is being done at the same time
 */
-int SM_ENTRY(kernel) register_sm(const void *addr1, const void *addr2, const void *addr3) {
+int SM_ENTRY(kernel) register_sm( void *addr1,  void *addr2,  void *addr3) {
 	sm_id caller_id = sancus_get_caller_id();
 	if(!initialized){
 		initialize_box();
 		initialized = 1;
-	}
-	
+	}	
+
 	int i;
-	// if(caller_id == 0) {
-	// 	debug_puts("SM not protected");
-	// 	return 4;
-	// }
+	if(caller_id == 0) {
+		debug_puts("SM not protected");
+		return 4;
+	}
 
-	// if(sancus_get_id(addr1) != caller_id) {
-
+	//TODO reactivate it (be careful to make it work for the data section as well)
+	// if(get_addr_id(addr1) != caller_id) {
+	// 	debug_print_int("address value: %d\n",addr1);
+	// 	debug_print_int("addr1_id: %d\n",get_addr_id(addr1));
 	// 	debug_puts("Invalid address");
 	// 	return 1; // invalid address return code
 	// }
@@ -177,12 +194,11 @@ int SM_ENTRY(kernel) register_sm(const void *addr1, const void *addr2, const voi
 
 	if(reg_step == 0) {
 		register_id = caller_id;
-		// if((sancus_get_id(addr2) != caller_id) || (sancus_get_id(addr1) != caller_id)) {
-
-		// 	debug_puts("Invalid address");
-		// 	return 1; // invalid address return code
-		// }
-		debug_puts("Registering - Step 1");
+		if((get_addr_id(addr2) != caller_id) || (get_addr_id(addr1) != caller_id)) {
+			debug_puts("Invalid address");
+			return 1; // invalid address return code
+		}
+		debug_puts("\nRegistering - Step 1");
 		reg_SMs[total_reg_sm].id = caller_id;
 		reg_SMs[total_reg_sm].pub_start_addr = (void*)addr1;
 		reg_SMs[total_reg_sm].pub_end_addr = (void*)addr2;
@@ -192,26 +208,29 @@ int SM_ENTRY(kernel) register_sm(const void *addr1, const void *addr2, const voi
 	else if(reg_step == 1){// && (caller_id == register_id)) {
 		debug_puts("Registering - Step 2");
 		reg_SMs[total_reg_sm].secret_end_addr = (void*)addr1;
-		debug_print_int("public start: %x\n",(int)reg_SMs[total_reg_sm].pub_start_addr);
-		debug_print_int("public end: %x\n",(int)reg_SMs[total_reg_sm].pub_end_addr);
-		debug_print_int("secret start: %x\n",(int)reg_SMs[total_reg_sm].secret_start_addr);
-		debug_print_int("secret end: %x\n",(int)reg_SMs[total_reg_sm].secret_end_addr);
-		
+		// debug_print_int("registered SM id: %d\n", reg_SMs[total_reg_sm].id );
+		// debug_print_int("public start: %d\n",(int)reg_SMs[total_reg_sm].pub_start_addr);
+		// debug_print_int("public end: %d\n",(int)reg_SMs[total_reg_sm].pub_end_addr);
+		// debug_print_int("secret start: %d\n",(int)reg_SMs[total_reg_sm].secret_start_addr);
+		// debug_print_int("secret end: %d\n",(int)reg_SMs[total_reg_sm].secret_end_addr);
 
 		compute_hash(total_reg_sm);
-		// return 0;
-	}
-	// else if(caller_id != register_id) {
-	// 	debug_puts("Another register is in progress");
-	// 	return 5;
-	// }
-	else if(reg_step == 2) {
-		debug_puts("Registering - Step 3");
-		reg_SMs[total_reg_sm].id = caller_id;
+
 		total_reg_sm++;
 		reg_step = 0;
 		return 0;
 	}
+	else if(caller_id != register_id) {
+		debug_puts("Another register is in progress");
+		return 5;
+	}
+	// else if(reg_step == 2) {
+	// 	debug_puts("Registering - Step 3");
+	// 	reg_SMs[total_reg_sm].id = caller_id;
+	// 	total_reg_sm++;
+	// 	reg_step = 0;
+	// 	return 0;
+	// }
 	else {
 		debug_puts("Invalid step");
 		return 2; // invalid step return code
