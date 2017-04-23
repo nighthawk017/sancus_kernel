@@ -35,9 +35,6 @@ static registered_sm_data SM_DATA(kernel) reg_SMs[TOTAL_SM];
 static int 			 SM_DATA(kernel) reg_step;
 static int 		     SM_DATA(kernel) reg_id;
 
-//TODO move these entries to another file
-
-
 
 
 /**************************************************************************************
@@ -118,16 +115,16 @@ void SM_FUNC(kernel) compute_hash(int index) {
 
 
 	//uncommenting generateTestVectors will compute a hash on the message "Sponge + Present = Spongent"
-	 generateTestVectors();
+	 // generateTestVectors();
 
 	// uncommenting the next line computes a hash based on the public address range of the registered SM found at position index in the reg_SMs array
 	// SpongentHash((BitSequence*)reg_SMs[index].pub_start_addr,(size << 3),reg_SMs[index].pub_hash);
 	 
 	// uncommenting the next line computes a hash based on the first 256 bits of the public address range of the registered SM found at position index in the reg_SMs array
-	// SpongentHash((BitSequence*)reg_SMs[index].pub_start_addr,256,(BitSequence*)reg_SMs[index].pub_hash);
+	SpongentHash((BitSequence*)reg_SMs[index].pub_start_addr,256,(BitSequence*)reg_SMs[index].pub_hash);
 
 	// printing the hash
-	// in the case of generateTestVectors, it will print 0s 
+	// in the case of generateTestVectors, it will print 0s (there is another printer in generateTestVectors())
 	char* p ;
 	p = (char*)reg_SMs[index].pub_hash;
 	for(int i = 0; i < 16;i++)

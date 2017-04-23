@@ -62,6 +62,10 @@ void SM_FUNC(kernel) initialize_box() {
 	sBoxLayer[224] = 0x3e; sBoxLayer[225] = 0x3d; sBoxLayer[226] = 0x3b; sBoxLayer[227] = 0x30; sBoxLayer[228] = 0x32; sBoxLayer[229] = 0x31; sBoxLayer[230] = 0x34; sBoxLayer[231] = 0x3f; sBoxLayer[232] = 0x37; sBoxLayer[233] = 0x3a; sBoxLayer[234] = 0x38; sBoxLayer[235] = 0x35; sBoxLayer[236] = 0x39; sBoxLayer[237] = 0x3c; sBoxLayer[238] = 0x33; sBoxLayer[239] = 0x36; 
 	sBoxLayer[240] = 0x6e; sBoxLayer[241] = 0x6d; sBoxLayer[242] = 0x6b; sBoxLayer[243] = 0x60; sBoxLayer[244] = 0x62; sBoxLayer[245] = 0x61; sBoxLayer[246] = 0x64; sBoxLayer[247] = 0x6f; sBoxLayer[248] = 0x67; sBoxLayer[249] = 0x6a; sBoxLayer[250] = 0x68; sBoxLayer[251] = 0x65; sBoxLayer[252] = 0x69; sBoxLayer[253] = 0x6c; sBoxLayer[254] = 0x63; sBoxLayer[255] = 0x66; 
 
+	S[0] = 0xe; S[1] = 0xd;	S[2] = 0xb;	S[3] = 0x0;
+	S[4] = 0x2;	S[5] = 0x1;	S[6] = 0x4;	S[7] = 0xf;
+	S[8] = 0x7;	S[9] = 0xa;	S[10] = 0x8; S[11] = 0x5;
+	S[12] = 0x9;	S[13] = 0xc;	S[14] = 0x3;	S[15] = 0x6;
 }
 
 // int multiply2(int a, int b) {
