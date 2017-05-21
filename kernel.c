@@ -4,10 +4,11 @@
 #include <msp430.h>
 
 #include "debugprinters.c"
-#include "spongent_c.c"
+//#include "spongent_c.c"
 #include "kernel.h"
 
-
+#include <inttypes.h>
+#include "sha2.c"
 
 // *** Shadow stack variables
 static unsigned		 SM_DATA(kernel) id_stack[MAX_STACK_SIZE] ;
@@ -22,7 +23,10 @@ static int 			 SM_DATA(kernel) sender_id;
 static int 			 SM_DATA(kernel) register_id;
 static void*		 SM_DATA(kernel) tag[SANCUS_TAG_SIZE];
 
-static char		 	 SM_DATA(kernel) test_expected_hash[8] = {-103, 40, 83, 107, -126, -31, -113, 5 };
+static char		 	 test_unprotected_hash[32] = "hash_value_122222222222222222222";
+
+static char		 	 SM_DATA(kernel) test_expected_hash[32] = " ";
+
 
 static int 			 SM_DATA(kernel) total_reg_sm;
 static void*		 SM_DATA(kernel) expected_hash[HASH_SIZE/VOID_SIZE];
@@ -66,6 +70,7 @@ void SM_ENTRY(kernel) unregister() {
 int SM_ENTRY(kernel) verify_sm(sm_id id) {
 	int i, index;
 	index = -1;
+	// debug_puts(cool_variable);
 	//TODO change the constant and put it in a define
 	for(i = 0; i < total_reg_sm; i++) {
 		if(reg_SMs[i].id == id){
@@ -78,7 +83,7 @@ int SM_ENTRY(kernel) verify_sm(sm_id id) {
 		return 2;
 	}
 
-	test_expected_hash[0] = 122;
+	test_expected_hash[0] = 15648;
 	test_expected_hash[1] = 57;
 	test_expected_hash[2] = 36; 
 	test_expected_hash[3] = 101;
@@ -88,48 +93,101 @@ int SM_ENTRY(kernel) verify_sm(sm_id id) {
 	test_expected_hash[7] = 79;
 
 	//change for condition with HASH_SIZE/VOID_SIZE
-	for(i = 0; i < 8; i++) {
-		char *p,*p2;
-		p = (char*)reg_SMs[index].pub_hash;
-		p2 = test_expected_hash;
-		if(((int)*(p + i)) != ((int)*(p2 + i))) {
-			debug_puts("Invalid hash");
-			return 1;
-		}
-		// debug_print_int("%d ",(int)*(p + i));
-	}
+	// for(i = 0; i < 8; i++) {
+	// 	char *p,*p2;
+	// 	p = (char*)reg_SMs[index].pub_hash;
+	// 	p2 = test_expected_hash;
+	// 	if(((int)*(p + i)) != ((int)*(p2 + i))) {
+	// 		debug_puts("Invalid hash");
+	// 		return 1;
+	// 	}
+	// 	// debug_print_int("%d ",(int)*(p + i));
+	// }
+	if(test_unprotected_hash[0] == 'a')
+		debug_puts("^^^^ it worked :>");
 	debug_puts("Verification successful!");
 	return 0;
 }
 
+uint32_t SM_DATA(kernel) hash[8];
+
+// void SM_FUNC(kernel) dump_buf(void)
+// {
+//     int i;
+//     printf("[main] hash is: ");
+//     for (i = 0; i < 8; i++)
+//         printf("%" PRIx32 " ", hash[i]);
+//     printf("\n");
+// }
 
 /**************************************************************************************
 	Computes the hash of the SM present at the index position in the reg_SMs array and stores it in the associated "hash" field.
 */
+void* SM_DATA(kernel) message[1024];
+
 void SM_FUNC(kernel) compute_hash(int index) {
 	debug_puts("Computing hash");
 
 	unsigned int size = reg_SMs[index].pub_end_addr - reg_SMs[index].pub_start_addr - 1;
+	char *p;
+
+	p = (char*)reg_SMs[index].pub_start_addr;
+	for(int i = 0; i < size;i++){
+		message[i] = (char) *p;
+		// debug_print_int("%x\n",(int)message[i]);
+		p++;
+	}
+	message[size] = reg_SMs[index].pub_start_addr;
+	message[size + 1] = reg_SMs[index].pub_end_addr;
+	message[size + 2] = reg_SMs[index].secret_start_addr;
+	message[size + 3] = reg_SMs[index].secret_end_addr;
+	// size = size >> 3;
 	// TODO take into consideration layout as well
 	debug_print_int("### public address range %d\n", (int)size); 
 
 
-	//uncommenting generateTestVectors will compute a hash on the message "Sponge + Present = Spongent"
-	 // generateTestVectors();
 
-	// uncommenting the next line computes a hash based on the public address range of the registered SM found at position index in the reg_SMs array
-	// SpongentHash((BitSequence*)reg_SMs[index].pub_start_addr,(size << 3),reg_SMs[index].pub_hash);
-	 
-	// uncommenting the next line computes a hash based on the first 256 bits of the public address range of the registered SM found at position index in the reg_SMs array
-	SpongentHash((BitSequence*)reg_SMs[index].pub_start_addr,256,(BitSequence*)reg_SMs[index].pub_hash);
+
+	SHA_2( &reg_SMs[index].pub_start_addr, size+4, &hash[0], 0x1);
+	// SHA_2( &reg_SMs[index].pub_start_addr, 10, &hash[0], 0x1);
+	debug_print_int("start addr: %d\n",reg_SMs[index].pub_start_addr);
+
+	for(int i = 0; i < 8 ; i++)
+		reg_SMs[index].pub_hash[i] = hash[i];
+
+	for (int i=0; i<8; i++)
+	{
+	    debug_print_int("0x%x",(hash[i]>>16));
+	    debug_print_int("%x\n",hash[i]);
+	    if(hash[i] != reg_SMs[index].pub_hash[i])
+	    	debug_puts("Invalid hash");
+	}
+	// debug_puts("Finished hashing");
+	
+
+	// debug_puts("example1");
+	// if(sha224_example1(&hash[0]))
+	// 	debug_puts("### different results!");
+	
+	// // debug_print_int("sizeof hash%d", sizeof(void*));
+	// debug_puts("\nexample2");
+	// if(sha256_example2(&hash[0]))
+	// 	debug_puts("### different results!");
+	// SHA_2( reg_SMs[index].pub_start_addr, (size >> 3), reg_SMs[index].pub_hash, 0x1);
+	// debug_puts("\nexample6");
+	// if(sha256_example6(&hash[0]))
+	// 	debug_puts("### different results!");	
+
+
+	// dump_buf();
 
 	// printing the hash
 	// in the case of generateTestVectors, it will print 0s (there is another printer in generateTestVectors())
-	char* p ;
-	p = (char*)reg_SMs[index].pub_hash;
-	for(int i = 0; i < 12;i++)
-		debug_print_int("%d ",(int)*(p+i));
-	debug_puts(" ");
+	// char* p ;
+	// p = (char*)reg_SMs[index].pub_hash;
+	// for(int i = 0; i < 12;i++)
+	// 	debug_print_int("%d ",(int)*(p+i));
+	// debug_puts(" ");
 
 	// size = reg_SMs[index].secret_end_addr - reg_SMs[index].secret_start_addr - 1;
 	// debug_print_int("### secret address range %d\n", (int)size); 
@@ -166,10 +224,10 @@ sm_id SM_FUNC(kernel) get_addr_id(void * addr) {
 */
 int SM_ENTRY(kernel) register_sm( void *addr1,  void *addr2,  void *addr3) {
 	sm_id caller_id = sancus_get_caller_id();
-	if(!initialized){
-		initialize_box();
-		initialized = 1;
-	}	
+	// if(!initialized){
+	// 	initialize_box();
+	// 	initialized = 1;
+	// }	
 
 	int i;
 	if(caller_id == 0) {

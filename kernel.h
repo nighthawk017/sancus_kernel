@@ -46,7 +46,8 @@ typedef struct {
  	void*		 secret_start_addr; 
  	void*		 secret_end_addr;
  	// added 11 so that the struct has correct size
- 	void* 		 pub_hash[hashsize/4 + 11];
+ 	uint32_t* 	 pub_hash[8];
+ 	void* 		 aux[11];
  	sm_id        id;
  }registered_sm_data;
 

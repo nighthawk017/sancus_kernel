@@ -9,6 +9,7 @@
     void __attribute__((noinline)) printf1(const char* fmt, int arg1);
     void __attribute__((noinline)) printf2(const char* fmt, int arg1, int arg2);
     void __attribute__((noinline)) printf3(const char* fmt, int arg1, int arg2, int arg3);
+
     
     #if __SANCUS_SIM
         #define sm_io_init()

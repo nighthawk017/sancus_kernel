@@ -68,9 +68,17 @@ void SM_FUNC(kernel) initialize_box() {
 	S[12] = 0x9;	S[13] = 0xc;	S[14] = 0x3;	S[15] = 0x6;
 }
 
-// int multiply2(int a, int b) {
-// 	return a*b;
-// }
+signed long SM_FUNC(kernel) multiply(int a, int b) {
+	signed long result;
+  	MPYS = a;                        // Load first operand -signed mult
+  	OP2 = b;                            // Load second operand
+
+  	result = RESHI;                           // Load RESHI word result
+  	result = (result<<16)|RESLO;   	
+	return result;
+
+}
+
 
 // int SM_FUNC(kernel) multiply(int a, int b) {
 // 	// if((a < 0) || (b < 0))
@@ -92,20 +100,71 @@ void SM_FUNC(kernel) initialize_box() {
 // 	return result;
 // }
 
-// int modulo2(int a, int b) {
-// 	return a%b;
+int SM_FUNC(kernel) modulo2(int a, int b) {
+	return a%b;
+}
+
+
+int divide(int nu, int de) {
+
+    int temp = 1;
+    int quotient = 0;
+
+    while (de <= nu) {
+        de <<= 1;
+        temp <<= 1;
+    }
+
+    //printf("%d %d\n",de,temp,nu);
+    while (temp > 1) {
+        de >>= 1;
+        temp >>= 1;
+
+        if (nu >= de) {
+            nu -= de;
+            //printf("%d %d\n",quotient,temp);
+            quotient += temp;
+        }
+    }
+
+    return quotient;
+}
+
+// int divide(int dividend, int divisor) { 
+
+//     int denom=divisor;
+//     int current = 1;
+//     int answer=0;
+
+//     if ( denom > dividend) 
+//         return 0;
+
+//     if ( denom == dividend)
+//         return 1;
+
+//     while (denom <= dividend) {
+//         denom <<= 1;
+//         current <<= 1;
+//     }
+
+//     denom >>= 1;
+//     current >>= 1;
+
+//     while (current!=0) {
+//         if ( dividend >= denom) {
+//             dividend -= denom;
+//             answer |= current;
+//         }
+//         current >>= 1;
+//         denom >>= 1;
+//     }    
+//     return answer;
 // }
 
-// int SM_FUNC(kernel) modulo(int a, int b) {
+int SM_FUNC(kernel) modulo(int a, int b) {
 
-// 	if(a < b)
-// 		return a;
-// 	int result = a;
-// 	while(result > b){
-// 		result = result - b;
-// 	}
-// 	return result;
-// }
+	return  a - (multiply(b,(int)(divide(a,b))));
+}
 
  void * SM_FUNC(kernel) c_memcpy(void *dst, const void *src, size_t len)
  {
@@ -291,14 +350,38 @@ bit16 SM_FUNC(kernel) retnuoCl(bit16 lfsr)
 
 //--------------------------------------------------------------------------------------------
 
-int SM_FUNC(kernel) Pi(int i)
+signed long SM_FUNC(kernel) defaultPi(int i)
 {
+
 	if (i != nBits-1) {
 		return (i*nBits/4)%(nBits-1);
 	}
 	else
 		return nBits-1;
 }
+
+signed long SM_FUNC(kernel) Pi(int i)
+{
+	if (i != nBits-1) {
+
+		signed long res, result;
+  		MPYS = i;                        // Load first operand -signed mult
+  		OP2 = (nBits>>2);                            // Load second operand
+
+	  	result = RESHI;                           // Load RESHI word result
+ 	 	result = (result<<16)|RESLO;   	 
+		// debug_print_int("i = %d\n",i);
+
+		// res = multiply(i,(nBits>>2));
+
+		// debug_print_int("result = %d\n\n",res);
+		result = modulo2( result , (nBits-1));
+		return result;
+	}
+	else
+		return nBits-1;
+}
+
 
 
 
@@ -307,7 +390,7 @@ int SM_FUNC(kernel) Pi(int i)
 
 void SM_FUNC(kernel) pLayer(hashState *state)
 {
-	int	i, j, PermutedBitNo;
+	long	i, j, PermutedBitNo;
 	bit8	tmp[nSBox], x, y;
 	
 	for(i = 0; i < nSBox; i++) tmp[i] = 0;
@@ -315,9 +398,12 @@ void SM_FUNC(kernel) pLayer(hashState *state)
 	for(i = 0; i < nSBox; i++){
 		for(j = 0; j < 8; j++){ 
 			x			= GET_BIT(state->value[i],j);
-			PermutedBitNo	= Pi(8*i+j);
-			y			= PermutedBitNo/8;
-			tmp[y]		^= x << (PermutedBitNo - 8*y);
+			// TSC_TIMER_START(hash_run);
+
+			PermutedBitNo	= Pi((i<<3)+j);
+			// TSC_TIMER_END(hash_run);
+			y			= PermutedBitNo >> 3;
+			tmp[y]		^= x << (PermutedBitNo - (y<<3));
 		}
 	}	
 	c_memcpy(state->value, tmp, nSBox);

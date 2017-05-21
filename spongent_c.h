@@ -116,7 +116,7 @@ HashReturn SM_FUNC(kernel)  Absorb(hashState *state);//, const BitSequence *data
 HashReturn SM_FUNC(kernel)  Squeeze(hashState *state);
 HashReturn SM_FUNC(kernel)  Pad(hashState *state);
 
-int          Pi(int i);
+signed long          Pi(int i);
 void         pLayer(hashState *state);
 void         Permute(hashState *state);
 
